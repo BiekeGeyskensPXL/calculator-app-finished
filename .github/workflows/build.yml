@@ -16,4 +16,4 @@ jobs:
       - name: Verification
         run: ls -alhR
       - name: Bundle code into Zip
-        run: zip -czf . ./bundle.zip
+        run: zip -czf ~/${PWD} ./bundle.zip
