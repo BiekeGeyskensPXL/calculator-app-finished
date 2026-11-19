@@ -18,6 +18,5 @@ jobs:
       - name: Bundle code into Zip
         run: zip -r bundle.zip .
       - name: check unit tests & report
-        run: npm test 
-             npm test --coverage
+        run: npm test && npm test --coverage
         
