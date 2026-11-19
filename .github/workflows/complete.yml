@@ -17,7 +17,7 @@ jobs:
         run: zip -r bundle.zip .
       - name: check unit tests & report
         run: |
-          npm ci
+          npm install
           npm test --coverage --testlocationtestresults
       - name: Better Test Reports Action
         uses: mridang/action-test-reporter@v3.0.1
