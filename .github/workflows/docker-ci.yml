@@ -57,7 +57,9 @@ jobs:
       # Scan automatisch naar CVE's in de container
       - name: Scan CVE's
         uses: docker/scout-action@v1
-
+        with:
+          command: cves
+          image: biekegeyskenspxl/app:latest
 
 
 
