@@ -16,68 +16,70 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # 1. Checkout
       - name: Checkout
         uses: actions/checkout@v4
         with:
           repository: PXL-2TIN-DevOps-Resources/calculator-app-finished
 
-      # 2. Installatie Node.js 
       - name: Setup Node.js environment
         uses: actions/setup-node@v4
         with:
           node-version: '20'
       
-      # 3. Installatie dependencies 
       - name: Install dependencies
         run: npm install
       
-      # 4. Uitvoering tests + coverage (Slechts 1 keer nodig!)
       - name: Unit testing & Coverage
         run: npm test -- --coverage --coverageReporters=lcov
 
-      # 5. Coverage tonen in Actions
       - name: Better Test Reports Action
-        uses: mridang/action-test-reporter@v3.0.1
+        if: always()
+        uses: mridang/action-test-reporter@v3
         with:
           name: Unit tests
           coverage-path: coverage/lcov.info
+          fail-on-empty: false
 
-      # 6. Coverage percentage berekenen (Veilig, crasht niet bij fouten)
+      # Coverage berekenen (100% crash-proof)
       - name: Get Coverage
+        id: cov
         if: always()
         run: |
           if [ -f coverage/lcov.info ]; then
-            LF=$(grep 'LF:' coverage/lcov.info | awk -F: '{sum+=$2} END {print sum}')
-            LH=$(grep 'LH:' coverage/lcov.info | awk -F: '{sum+=$2} END {print sum}')
+            LF=$(grep -o 'LF:[0-9]*' coverage/lcov.info | awk -F: '{sum+=$2} END {print sum}')
+            LH=$(grep -o 'LH:[0-9]*' coverage/lcov.info | awk -F: '{sum+=$2} END {print sum}')
+            LF=${LF:-0}
+            LH=${LH:-0}
             if [ "$LF" -gt 0 ]; then
-              echo "COVERAGE=$(( 100 * LH / LF ))%" >> $GITHUB_ENV
+              echo "percentage=$(( 100 * LH / LF ))%" >> $GITHUB_OUTPUT
             else
-              echo "COVERAGE=Onbekend" >> $GITHUB_ENV
+              echo "percentage=Onbekend" >> $GITHUB_OUTPUT
             fi
           else
-            echo "COVERAGE=Geen rapport" >> $GITHUB_ENV
+            echo "percentage=Geen rapport" >> $GITHUB_OUTPUT
           fi
 
-      # 7. PR Comment (Alleen als het een PR is)
+      # PR Comment
       - name: PR Comment
-        if: github.event_name == 'pull_request'
+        if: always() && github.event_name == 'pull_request'
         uses: peter-evans/create-or-update-comment@v3
         with:
           issue-number: ${{ github.event.pull_request.number }}
           body: |
             **Build Status:** ${{ job.status == 'success' && '✅ Succes' || '❌ Gefaald' }}
-            **Coverage:** ${{ env.COVERAGE }}
+            **Coverage:** ${{ steps.cov.outputs.percentage }}
 
-      # 8. Discord Notificatie (Alleen voor main of PR)
+      # Discord Notificatie
       - name: Discord
         if: always() && (github.ref_name == 'main' || github.event_name == 'pull_request')
         env:
           DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
+          COV_TEXT: ${{ steps.cov.outputs.percentage }}
         run: |
           STATUS="${{ job.status == 'success' && '✅ Succes' || '❌ Gefaald' }}"
           EVENT="${{ github.event_name == 'pull_request' && 'Pull Request' || 'Push' }}"
           
-          curl -H "Content-Type: application/json" \
-               -d "{\"content\": \"**$EVENT** op branch **${{ github.ref_name }}**\nStatus: $STATUS\nCoverage: ${{ env.COVERAGE }}\"}" \
+          # De -f flag zorgt dat de stap FAALT (rood wordt) als Discord een foutmelding geeft
+          curl -f -H "Content-Type: application/json" \
+               -d "{\"content\": \"**$EVENT** op branch **${{ github.ref_name }}**\nStatus: $STATUS\nCoverage: $COV_TEXT\"}" \
                $DISCORD_WEBHOOK
