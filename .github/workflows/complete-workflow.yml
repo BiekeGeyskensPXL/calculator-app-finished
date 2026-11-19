@@ -22,8 +22,7 @@ jobs:
       - name: Setup Node.js environment
         uses: actions/setup-node@v4
         with:
-          node-version: 20
-          cache: npm
+          node-version: '20'
       
       # Installatie dependencies 
       - name: Install dependencies
@@ -35,13 +34,13 @@ jobs:
 
       # generatie test-coverage rapport
       - name: Best Test Reports Action - test
-        run: npm test -- --coverage
+        run: npm test -- --coverage --coverageReporters=lcov
 
       # Coverage of result tonen? 
       - name: Better Test Reports Action
         uses: mridang/action-test-reporter@v3.0.1
         with:
           name: Unit tests
-          coverage-path: coverage/
+          coverage-path: coverage/icov.info
 
       
