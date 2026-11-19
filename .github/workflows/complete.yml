@@ -18,7 +18,7 @@ jobs:
       - name: check unit tests & report
         run: |
           npm install
-          npm test -- --coverage --testlocationtestresults
+          npm test -- --coverage --testLocationInResults
       - name: Better Test Reports Action
         uses: mridang/action-test-reporter@v3.0.1
         with:
