@@ -20,7 +20,7 @@ jobs:
       
       # Installatie dependencies 
       - name: Install dependencies
-        run: npm install
+        run: npm ci
       
       # Uitvoering unit tests
       - name: Unit testing
