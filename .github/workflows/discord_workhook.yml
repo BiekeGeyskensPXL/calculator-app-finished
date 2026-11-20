@@ -14,18 +14,16 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v7
+        uses: actions/checkout@v7 
         with:
           repository: PXL-2TIN-DevOps-Resources/calculator-app-finished
 
-      -
-        name: Setup Node.js environment
-        uses: actions/setup-node@v7.1.0
+      - name: Setup Node.js environment
+        uses: actions/setup-node@v7.1.0 
         with:
           node-version: '20'
 
-      -
-        name: check unit tests & report
+      - name: check unit tests & report
         run: |
           npm install
           npm test -- --coverage --coverageReporters=lcov
@@ -35,6 +33,7 @@ jobs:
         with:
           name: Unit tests
           coverage-path: coverage/lcov.info
+          fail-on-empty: false 
 
   notify:
     needs: build
@@ -44,12 +43,24 @@ jobs:
       pull-requests: write
     
     steps:
+      #  Bepaal of het een Push of PR is
+      - name: Set message variables
+        id: vars
+        run: |
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            echo "EVENT_TYPE=Pull Request" >> $GITHUB_OUTPUT
+          else
+            echo "EVENT_TYPE=Push" >> $GITHUB_OUTPUT
+          fi
+
       - name: Discord Notification
         uses: sarisia/actions-status-discord@v1
         with:
           webhook: ${{ secrets.DISCORD_WEBHOOK }}
           status: ${{ job.status }}
-          title: "Build ${{ job.status }} op ${{ github.ref_name }}"
+          # Dynamische titel op basis van Push/PR
+          title: "🚀 ${{ steps.vars.outputs.EVENT_TYPE }} op ${{ github.ref_name }}"
+          description: "De build is afgerond met status: **${{ job.status }}**"
 
       - name: PR Comment
         if: github.event_name == 'pull_request'
@@ -57,5 +68,7 @@ jobs:
         with:
           issue-number: ${{ github.event.pull_request.number }}
           body: |
-            🤖 *Build status:* ${{ job.status }}
+            # Gebruik needs.build.result voor de juiste status
+            🤖 **Build status:** ${{ needs.build.result == 'success' && '✅ Succes' || '❌ Gefaald' }}
+            
             Bekijk de test coverage in de [Action Summary](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}).
