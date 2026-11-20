@@ -1,0 +1,70 @@
+name: Code quality
+on: 
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      # Checkout
+      - name: Checkout
+        uses: actions/checkout@v4 # v6 bestaat niet, gebruik v4
+        with:
+          repository: PXL-2TIN-DevOps-Resources/calculator-app-finished
+
+      # Installatie Node.js 
+      - name: Setup Node.js environment
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      
+      # Installatie dependencies 
+      - name: Install dependencies
+        run: npm install
+      
+      # Uitvoering tests + coverage 
+      - name: Unit testing & Coverage
+        run: npm test -- --coverage --coverageReporters=lcov
+
+      # Coverage tonen
+      - name: Better Test Reports Action
+        uses: mridang/action-test-reporter@v3.0.1
+        with:
+          name: Unit tests
+          coverage-path: coverage/lcov.info
+
+  code-quality:
+    runs-on: ubuntu-latest
+
+    steps:
+      # Omdat dit een nieuwe, lege server is, moeten we alles opnieuw doen
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          repository: PXL-2TIN-DevOps-Resources/calculator-app-finished
+
+      - name: Setup Node.js environment
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install dependencies
+        run: npm install
+
+      # ESLint voor JavaScript/TypeScript linting
+      - name: Run ESLint
+        run: npm run lint
+
+      # Prettier voor code formatting controle
+      - name: Run Prettier Check
+        run: npm run format:check
+
+      # Security audit met npm audit
+      - name: Run npm audit
+        run: npm audit
